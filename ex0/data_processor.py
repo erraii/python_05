@@ -23,15 +23,10 @@ class DataProcessor(abc.ABC):
 class NumericProcessor(DataProcessor):
 
     def validate(self, data: typing.Any) -> bool:
-        try:
-            if isinstance(data, (int, float)):
-                return True
-            elif all(isinstance(val, (int | float)) for val in data):
-                return True
-            else:
-                return False
-        except Exception:
-            return False
+        if isinstance(data, (int, float)):
+            return True
+        if isinstance(data, list):
+            return all(isinstance(val, (int, float)) for val in data)
 
     def ingest(self, data: int | float | list[int] |
                list[float] | list[int | float]) -> None:
@@ -49,15 +44,10 @@ class NumericProcessor(DataProcessor):
 
 class TextProcessor(DataProcessor):
     def validate(self, data: typing.Any) -> bool:
-        try:
-            if isinstance(data, str):
-                return True
-            elif all(isinstance(val, str) for val in data):
-                return True
-            else:
-                return False
-        except Exception:
-            return False
+        if isinstance(data, str):
+            return True
+        if isinstance(data, list):
+            return all(isinstance(val, str) for val in data)
 
     def ingest(self, data: str | list[str]) -> None:
         if not self.validate(data):
