@@ -17,6 +17,8 @@ class DataProcessor(abc.ABC):
         pass
 
     def output(self) -> tuple[int, str]:
+        if not self._data_str:
+            raise IndexError("No data to output")
         return (self._data_str.pop(0))
 
 
