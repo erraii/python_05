@@ -19,7 +19,7 @@ class DataProcessor(abc.ABC):
     def output(self) -> tuple[int, str]:
         if not self._data_str:
             raise IndexError("No data to output")
-        return (self._data_str.pop(0))
+        return self._data_str.pop(0)
 
 
 class NumericProcessor(DataProcessor):
