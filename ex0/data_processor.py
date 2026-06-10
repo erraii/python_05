@@ -18,9 +18,8 @@ class DataProcessor(abc.ABC):
 
     def output(self) -> tuple[int, str]:
         if not self._data_str:
-            return (0,"")
-        else:
-            return self._data_str.pop(0)
+            raise IndexError("No data to output")
+        return self._data_str.pop(0)
 
 
 class NumericProcessor(DataProcessor):
@@ -52,6 +51,7 @@ class TextProcessor(DataProcessor):
             return True
         if isinstance(data, list):
             return all(isinstance(val, str) for val in data)
+        return False
 
     def ingest(self, data: str | list[str]) -> None:
         if not self.validate(data):
@@ -115,9 +115,12 @@ def main() -> None:
         print(f" Processing data: {int_list}")
         num_process.ingest(int_list)
     print(" Extracting 3 values...")
-    for i in range(0, 3):
-        output = num_process.output()
-        print(f" Numeric value {output[0]}: {output[1]}")
+    try:
+        for i in range(0, 3):
+            output = num_process.output()
+            print(f" Numeric value {output[0]}: {output[1]}")
+    except IndexError as e:
+        print(f" Got exception: {e}")
     print("\nTesting Text Processor...")
     text_process = TextProcessor()
     data_int = 42
@@ -128,9 +131,12 @@ def main() -> None:
         print(f" Processing data: {str_list}")
         text_process.ingest(str_list)
     print(" Extracting 1 value...")
-    for i in range(0, 1):
-        output = text_process.output()
-        print(f" Text value {output[0]}: {output[1]}")
+    try:
+        for i in range(0, 1):
+            output = text_process.output()
+            print(f" Text value {output[0]}: {output[1]}")
+    except IndexError as e:
+        print(f" Got exception: {e}")
     log_process = LogProcessor()
     data_str = "Hello"
     success = log_process.validate(data_str)
@@ -143,9 +149,12 @@ def main() -> None:
         print(f" Processing data: {dict_list}")
         log_process.ingest(dict_list)
     print(" Extracting 2 values...")
-    for i in range(0, 2):
-        output = log_process.output()
-        print(f" Log entry {output[0]}: {output[1]}")
+    try:
+        for i in range(0, 2):
+            output = log_process.output()
+            print(f" Log entry {output[0]}: {output[1]}")
+    except IndexError as e:
+        print(f" Got exception: {e}")
 
 
 if __name__ == "__main__":
