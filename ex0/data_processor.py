@@ -69,13 +69,12 @@ class TextProcessor(DataProcessor):
 class LogProcessor(DataProcessor):
     def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
-            return (isinstance(data.get("log_level"), str)
-                and isinstance(data.get("log_message"), str))
+            return (isinstance(data.get("log_level"), str) and
+                    isinstance(data.get("log_message"), str))
         if isinstance(data, list):
-            return all(isinstance(val, dict)
-                and isinstance(val.get("log_level"), str)
-                and isinstance(val.get("log_message"), str)
-                for val in data)
+            return all(isinstance(val, dict) and
+                       isinstance(val.get("log_level"), str) and
+                       isinstance(val.get("log_message"), str) for val in data)
         return False
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
@@ -115,12 +114,9 @@ def main() -> None:
         print(f" Processing data: {int_list}")
         num_process.ingest(int_list)
     print(" Extracting 3 values...")
-    try:
-        for i in range(0, 3):
-            output = num_process.output()
-            print(f" Numeric value {output[0]}: {output[1]}")
-    except IndexError as e:
-        print(f" Got exception: {e}")
+    for i in range(3):
+        output = num_process.output()
+        print(f" Numeric value {output[0]}: {output[1]}")
     print("\nTesting Text Processor...")
     text_process = TextProcessor()
     data_int = 42
@@ -131,12 +127,10 @@ def main() -> None:
         print(f" Processing data: {str_list}")
         text_process.ingest(str_list)
     print(" Extracting 1 value...")
-    try:
-        for i in range(0, 1):
-            output = text_process.output()
-            print(f" Text value {output[0]}: {output[1]}")
-    except IndexError as e:
-        print(f" Got exception: {e}")
+    for i in range(1):
+        output = text_process.output()
+        print(f" Text value {output[0]}: {output[1]}")
+    print("\nTesting Log Processor...")
     log_process = LogProcessor()
     data_str = "Hello"
     success = log_process.validate(data_str)
@@ -149,12 +143,9 @@ def main() -> None:
         print(f" Processing data: {dict_list}")
         log_process.ingest(dict_list)
     print(" Extracting 2 values...")
-    try:
-        for i in range(0, 2):
-            output = log_process.output()
-            print(f" Log entry {output[0]}: {output[1]}")
-    except IndexError as e:
-        print(f" Got exception: {e}")
+    for i in range(2):
+        output = log_process.output()
+        print(f" Log entry {output[0]}: {output[1]}")
 
 
 if __name__ == "__main__":
