@@ -74,15 +74,15 @@ class TextProcessor(DataProcessor):
 
 class LogProcessor(DataProcessor):
     def validate(self, data: typing.Any) -> bool:
-        try:
-            if isinstance(data, dict):
-                return True
-            elif all(isinstance(val, dict) for val in data):
-                return True
-            else:
-                return False
-        except Exception:
-            return False
+        if isinstance(data, dict):
+            return (isinstance(data.get("log_level"), str)
+                and isinstance(data.get("log_message"), str))
+        if isinstance(data, list):
+            return all(isinstance(val, dict)
+                and isinstance(val.get("log_level"), str)
+                and isinstance(val.get("log_message"), str)
+                for val in data)
+        return False
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
