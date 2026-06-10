@@ -18,8 +18,9 @@ class DataProcessor(abc.ABC):
 
     def output(self) -> tuple[int, str]:
         if not self._data_str:
-            print("No data to output")
-        return self._data_str.pop(0)
+            return (0,"")
+        else:
+            return self._data_str.pop(0)
 
 
 class NumericProcessor(DataProcessor):
@@ -29,6 +30,7 @@ class NumericProcessor(DataProcessor):
             return True
         if isinstance(data, list):
             return all(isinstance(val, (int, float)) for val in data)
+        return False
 
     def ingest(self, data: int | float | list[int] |
                list[float] | list[int | float]) -> None:
@@ -106,7 +108,7 @@ def main() -> None:
     print(f"'{data_str}' without prior validation:")
     try:
         num_process.ingest(data_str)
-    except Exception as e:
+    except ValueError as e:
         print(f" Got exception: {e}")
     int_list = [1, 2, 3, 4, 5]
     if num_process.validate(int_list):
