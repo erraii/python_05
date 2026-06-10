@@ -20,7 +20,7 @@ class DataProcessor(abc.ABC):
         if not self._data_str:
             raise IndexError("No data to output")
         return self._data_str.pop(0)
-    
+
     def get_total_processed(self) -> int:
         return self._rank
 
@@ -75,13 +75,12 @@ class TextProcessor(DataProcessor):
 class LogProcessor(DataProcessor):
     def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
-            return (isinstance(data.get("log_level"), str)
-                and isinstance(data.get("log_message"), str))
+            return (isinstance(data.get("log_level"), str) and
+                    isinstance(data.get("log_message"), str))
         if isinstance(data, list):
-            return all(isinstance(val, dict)
-                and isinstance(val.get("log_level"), str)
-                and isinstance(val.get("log_message"), str)
-                for val in data)
+            return all(isinstance(val, dict) and
+                       isinstance(val.get("log_level"), str) and
+                       isinstance(val.get("log_message"), str) for val in data)
         return False
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
@@ -98,82 +97,78 @@ class LogProcessor(DataProcessor):
                 self._data_str.append((self._rank, to_str))
                 self._rank += 1
 
+
 class DataStream:
     def __init__(self) -> None:
-        self.processors: list[DataProcessor] = []
+        self._processors: list[DataProcessor] = []
+        self._success: bool = False
 
     def register_processor(self, proc: DataProcessor) -> None:
-        self.processors.append(proc)
+        self._processors.append(proc)
 
-    def process_stream(self, stream: list[typing.Any])-> None:
-        for processor in self.processors:
-            for item in stream:
+    def process_stream(self, stream: list[typing.Any]) -> None:
+        for item in stream:
+            self._success = False
+            for processor in self._processors:
                 if processor.validate(item):
                     processor.ingest(item)
-                else:
-                    print(f"DataStream error- Can't process element in stream: {item}")
-                 
-    def print_processors_stats(self)-> None:
+                    self._success = True
+                    break
+            if not self._success:
+                print("DataStream error-", end=" ")
+                print(f"Can't process element in stream: {item}")
+
+    def print_processors_stats(self) -> None:
         print("== DataStream statistics ==")
 
-        if not self.processors:
+        if not self._processors:
             print("No processor found, no data")
             return
-
-        for processor in self.processors:
+        for processor in self._processors:
             name = processor.__class__.__name__.replace(
-                "Processor",
-                " Processor"
-            )
-
+                "Processor", " Processor")
             print(
                 f"{name}: total {processor.get_total_processed()} "
                 f"items processed, remaining "
                 f"{processor.get_remaining_count()} on processor"
             )
 
-        
 
 def main() -> None:
     print("=== Code Nexus - Data Stream ===")
+    print("\nInitialize Data Stream...")
     data_stream = DataStream()
     data_stream.print_processors_stats()
-    print("Registering Numeric Processor")
+    print("\nRegistering Numeric Processor")
     numeric_processor = NumericProcessor()
     data_stream.register_processor(numeric_processor)
-    first_batch = ['Hello world', [3.14,-1, 2.71], 
-                   [{'log_level': 'WARNING', 'log_message': 'Telnet access! Use ssh instead'},
-                    {'log_level': 'INFO', 'log_message': 'User wil is connected'}], 
-                    42, ['Hi', 'five']]
-    print("Send first batch of data on stream: ")
+    first_batch = ['Hello world', [3.14, -1, 2.71],
+                   [{'log_level': 'WARNING',
+                     'log_message': 'Telnet access! Use ssh instead'},
+                    {'log_level': 'INFO',
+                     'log_message': 'User wil is connected'}], 42, ['Hi',
+                                                                    'five']]
+    print(f"\nSend first batch of data on stream: {first_batch}")
     data_stream.process_stream(first_batch)
     data_stream.print_processors_stats()
-    print("Registering other data processors")
+    print("\nRegistering other data processors")
     text_processor = TextProcessor()
     log_processor = LogProcessor()
     data_stream.register_processor(text_processor)
     data_stream.register_processor(log_processor)
-    print("Send the same batch again: ")
+    print("Send the same batch again")
     data_stream.process_stream(first_batch)
     data_stream.print_processors_stats()
-    print("Consume some elements from the data processors: Numeric 3, Text 2, Log 1")
-    try:
-        for i in range(0, 3):
-            numeric_processor.output()
-    except IndexError as e:
-        print(f" Got exception: {e}")
-    try:
-        for i in range(0, 2):
-            text_processor.output()
-    except IndexError as e:
-        print(f" Got exception: {e}")
-    try:
-        for i in range(0, 1):
-            log_processor.output()
-    except IndexError as e:
-        print(f" Got exception: {e}")
+    print("\nConsume some elements from the data processors:", end=" ")
+    print("Numeric 3, Text 2, Log 1")
+    for i in range(3):
+        numeric_processor.output()
+    for i in range(2):
+        text_processor.output()
+    for i in range(1):
+        log_processor.output()
     data_stream.print_processors_stats()
-    
+
 
 if __name__ == "__main__":
     main()
