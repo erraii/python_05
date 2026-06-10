@@ -20,6 +20,12 @@ class DataProcessor(abc.ABC):
         if not self._data_str:
             raise IndexError("No data to output")
         return self._data_str.pop(0)
+    
+    def get_total_processed(self) -> int:
+        return self._rank
+
+    def get_remaining_count(self) -> int:
+        return len(self._data_str)
 
 
 class NumericProcessor(DataProcessor):
@@ -93,74 +99,81 @@ class LogProcessor(DataProcessor):
                 self._rank += 1
 
 class DataStream:
-    def register_processor(self, proc: DataProcessor)-> None:
+    def __init__(self) -> None:
+        self.processors: list[DataProcessor] = []
+
+    def register_processor(self, proc: DataProcessor) -> None:
+        self.processors.append(proc)
 
     def process_stream(self, stream: list[typing.Any])-> None:
+        for processor in self.processors:
+            for item in stream:
+                if processor.validate(item):
+                    processor.ingest(item)
+                else:
+                    print(f"DataStream error- Can't process element in stream: {item}")
+                 
+    def print_processors_stats(self)-> None:
+        print("== DataStream statistics ==")
+
+        if not self.processors:
+            print("No processor found, no data")
+            return
+
+        for processor in self.processors:
+            name = processor.__class__.__name__.replace(
+                "Processor",
+                " Processor"
+            )
+
+            print(
+                f"{name}: total {processor.get_total_processed()} "
+                f"items processed, remaining "
+                f"{processor.get_remaining_count()} on processor"
+            )
+
         
 
 def main() -> None:
-    print("=== Code Nexus - Data Processor ===")
-    print("\nTesting Numeric Processor...")
-    num_process = NumericProcessor()
-    data_int = 42
-    success = num_process.validate(data_int)
-    print(f" Trying to validate input '{data_int}': {success}")
-    data_str = "Hello"
-    success = num_process.validate(data_str)
-    print(f" Trying to validate input '{data_str}': {success}")
-    data_str = "foo"
-    print(" Test invalid ingestion of string ", end="")
-    print(f"'{data_str}' without prior validation:")
-    try:
-        num_process.ingest(data_str)
-    except ValueError as e:
-        print(f" Got exception: {e}")
-    int_list = [1, 2, 3, 4, 5]
-    if num_process.validate(int_list):
-        print(f" Processing data: {int_list}")
-        num_process.ingest(int_list)
-    print(" Extracting 3 values...")
+    print("=== Code Nexus - Data Stream ===")
+    data_stream = DataStream()
+    data_stream.print_processors_stats()
+    print("Registering Numeric Processor")
+    numeric_processor = NumericProcessor()
+    data_stream.register_processor(numeric_processor)
+    first_batch = ['Hello world', [3.14,-1, 2.71], 
+                   [{'log_level': 'WARNING', 'log_message': 'Telnet access! Use ssh instead'},
+                    {'log_level': 'INFO', 'log_message': 'User wil is connected'}], 
+                    42, ['Hi', 'five']]
+    print("Send first batch of data on stream: ")
+    data_stream.process_stream(first_batch)
+    data_stream.print_processors_stats()
+    print("Registering other data processors")
+    text_processor = TextProcessor()
+    log_processor = LogProcessor()
+    data_stream.register_processor(text_processor)
+    data_stream.register_processor(log_processor)
+    print("Send the same batch again: ")
+    data_stream.process_stream(first_batch)
+    data_stream.print_processors_stats()
+    print("Consume some elements from the data processors: Numeric 3, Text 2, Log 1")
     try:
         for i in range(0, 3):
-            output = num_process.output()
-            print(f" Numeric value {output[0]}: {output[1]}")
+            numeric_processor.output()
     except IndexError as e:
         print(f" Got exception: {e}")
-    print("\nTesting Text Processor...")
-    text_process = TextProcessor()
-    data_int = 42
-    success = text_process.validate(data_int)
-    print(f" Trying to validate input '{data_int}': {success}")
-    str_list = ["Hello", "Nexus", "World"]
-    if text_process.validate(str_list):
-        print(f" Processing data: {str_list}")
-        text_process.ingest(str_list)
-    print(" Extracting 1 value...")
-    try:
-        for i in range(0, 1):
-            output = text_process.output()
-            print(f" Text value {output[0]}: {output[1]}")
-    except IndexError as e:
-        print(f" Got exception: {e}")
-    log_process = LogProcessor()
-    data_str = "Hello"
-    success = log_process.validate(data_str)
-    print(f" Trying to validate input '{data_str}': {success}")
-    dict_list = [{'log_level': 'NOTICE',
-                  'log_message': 'Connection to server'},
-                 {'log_level': 'ERROR',
-                  'log_message': 'Unauthorized access!!'}]
-    if log_process.validate(dict_list):
-        print(f" Processing data: {dict_list}")
-        log_process.ingest(dict_list)
-    print(" Extracting 2 values...")
     try:
         for i in range(0, 2):
-            output = log_process.output()
-            print(f" Log entry {output[0]}: {output[1]}")
+            text_processor.output()
     except IndexError as e:
         print(f" Got exception: {e}")
-
+    try:
+        for i in range(0, 1):
+            log_processor.output()
+    except IndexError as e:
+        print(f" Got exception: {e}")
+    data_stream.print_processors_stats()
+    
 
 if __name__ == "__main__":
     main()
